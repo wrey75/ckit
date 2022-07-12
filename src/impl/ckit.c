@@ -12,17 +12,10 @@ void ckit_init(void) {
 }
 
 void ckit_exit(const char *message){
-    fprintf(stderr, "**FATAL**: %s", message);
+    fprintf(stderr, "**FATAL**: %s\n", message);
     exit(1);
 }
 
 
-void *ckit_new_object(struct ckit_definition_class *def){
-    return ckit_alloc(def->size);
-}
 
-void *ckit_del_object(void *ptr){
-    ckit_free(ptr);
-    return NULL;
-}
 

@@ -18,19 +18,21 @@ DEFINE_CLASS(UString) {
     uint16_t size;
 };
 
-END_CLASS(UString)
+#define WCHAR_SIZE siezof(wchar_t)
 
 ALLOCATE_DEFINITION(UString)
 {
     ptr->size = 1;
-    ptr->buf = ckit_alloc(ptr->size * 2);
+    ptr->buf = ckit_alloc(sizeof(wchar_t));
     ptr->buf[0] = 0;
     ptr->len = 0;
 }
 
-void UString_append(UString *str, const char *completion)
-{
+DISPOSE_DEFINITION(UString) {
+    ckit_free(ptr->buf);
 }
+
+REGISTER_CLASS(UString)
 
 
 UString *ustr_from(const char *source)
@@ -44,10 +46,13 @@ size_t ustr_length(const UString *str) {
     return str->len;
 }
 
+const wchar_t *ustr_buffer(const UString *str){
+    return (const wchar_t *)str->buf;
+}
 
 static void ustr_ensure(UString *str, int requested){
     if(requested >= str->size){
-        size_t newlen = str->size < 2000 ? str->size * sizeof(wchar_t) : str->len + 2000;
+        size_t newlen = str->size < 2000 ? str->size : str->len + 2000;
         if(requested >= newlen) newlen = requested + 16;
         str->buf = ckit_realloc(str->buf, newlen * sizeof(wchar_t));
         str->size = newlen;
@@ -72,7 +77,8 @@ void ustr_ltrim(UString *str){
     int i = 0;
     while( i < str->len && iswspace(str->buf[i])) i++;
     if(i > 0){
-        memmove(str->buf, &str->buf[i], str->len - i + 1);
+        memmove(str->buf, &str->buf[i], (str->len - i + 1) * sizeof(wchar_t));
+        str->len -= i; 
     }
     assert(str->buf[str->len] == 0);
 }

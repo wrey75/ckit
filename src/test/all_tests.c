@@ -19,6 +19,7 @@ void test1() {
     assert(ustr_length(str) == strlen("  Le chat est mort. "));
     STEP;
     ustr_trim(str);
+    printf("[%ls] = %i chars\n", ustr_buffer(str), ustr_length(str));
     assert(ustr_length(str) == strlen("Le chat est mort."));
     DEL(str);
 }
@@ -27,4 +28,5 @@ int main(int argc, const char *argv[]){
     ckit_init();
     ckit_infos(stdout);
     RUN(test1);
+    ckit_infos(stdout);
 }
