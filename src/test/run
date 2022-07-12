@@ -1,0 +1,8 @@
+#!/bin/bash -e -x
+for FILE in $(ls ../impl/*.c)
+do 
+  gcc -c -g $FILE
+done
+
+gcc -g all_tests.c *.o
+./a.out
