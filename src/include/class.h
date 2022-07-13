@@ -4,6 +4,8 @@
 
 typedef struct {
     void *ptr;
+    unsigned used : 1;
+
 } ckit_object_ptr;
 
 struct ckit_definition_class {
@@ -12,7 +14,9 @@ struct ckit_definition_class {
     void (*construct_fnct)(void *ptr);
     void (*finalize_fnct)(void *ptr);
     ckit_object_ptr *list;
-    size_t allocated;
+    int allocated;
+    int in_use;
+    int total;
 };
 
 
@@ -42,6 +46,8 @@ struct ckit_definition_class {
         .finalize_fnct = &ckit_finalize0_##a, \
         .list = NULL, \
         .allocated = 0, \
+        .in_use = 0, \
+        .total = 0, \
     };
 
 
@@ -54,9 +60,9 @@ extern void *ckit_del_object(void *);
 
 #define ALLOCATE_DEFINITION(a) \
     struct ckit_definition_class ckit_class_##a; \
-    static inline void ckit_construct_##a(a *ptr)
+    static inline void ckit_construct_##a(a *self)
     
-#define DISPOSE_DEFINITION(a) static inline void ckit_finalize_##a(a* ptr)
+#define DISPOSE_DEFINITION(a) static inline void ckit_finalize_##a(a* self)
 #define CLASS_TYPE(a) (a->ckit_class_name)
 
 

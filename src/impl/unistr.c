@@ -22,14 +22,14 @@ DEFINE_CLASS(UString) {
 
 ALLOCATE_DEFINITION(UString)
 {
-    ptr->size = 1;
-    ptr->buf = ckit_alloc(sizeof(wchar_t));
-    ptr->buf[0] = 0;
-    ptr->len = 0;
+    self->size = 1;
+    self->buf = ckit_alloc(sizeof(wchar_t));
+    self->buf[0] = 0;
+    self->len = 0;
 }
 
 DISPOSE_DEFINITION(UString) {
-    ckit_free(ptr->buf);
+    ckit_free(self->buf);
 }
 
 REGISTER_CLASS(UString)

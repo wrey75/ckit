@@ -14,7 +14,9 @@
 #include "include/types.h"
 #include "include/unistr.h"
 
-
+extern long ckit_memory_check(void);
 extern void ckit_init();
 extern void ckit_infos(FILE *);
 extern void ckit_exit(const char *message);
+
+extern void ckit_object_list(FILE *f);
