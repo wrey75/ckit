@@ -24,10 +24,29 @@ void test1() {
     DEL(str);
 }
 
+void test2() {
+    fprintf(stderr, "HERE 22");
+    Array *array = NEW(Array);
+    array_add(array, (void *)38);
+    array_add(array, (void *)42);
+    array_add(array, (void *)59);
+    assert(array_size(array) == 3);
+    
+    STEP;
+    assert(array_get(array,1) == (void *)42);
+
+    STEP;
+    array_remove(array, 0);
+    assert(array_get(array,1) == (void *)59);
+    assert(array_size(array) == 2);
+    DEL(array);
+}
+
 int main(int argc, const char *argv[]){
     ckit_init();
     ckit_infos(stdout);
     RUN(test1);
+    RUN(test2);
     ckit_infos(stdout);
     ckit_object_list(stderr);
 }

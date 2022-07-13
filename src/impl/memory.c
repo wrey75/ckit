@@ -248,7 +248,8 @@ void *ckit_new_object(struct ckit_definition_class *def)
 {
     struct ckit_extra_info *data = ckit_alloc(def->size + EXTRA_BYTES);
     int8_t *ptr = (int8_t *)data + EXTRA_BYTES;
-    fprintf(stderr, "ALLOCATING...");
+    assert(def != NULL);
+    assert(def->construct_fnct != NULL);
     (*def->construct_fnct)(ptr);
     data->class_ptr = def;
     data->class_ptr->in_use++;
