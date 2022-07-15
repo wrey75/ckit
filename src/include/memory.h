@@ -3,6 +3,7 @@
 #define MEMORY_H__
 
 extern void *ckit_alloc(size_t size);
+extern void *ckit_calloc(size_t nmemb, size_t size);
 extern void ckit_free(void *);
 extern void *ckit_realloc(void *, size_t newsize);
 

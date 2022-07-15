@@ -20,14 +20,12 @@ DEFINE_CLASS(Array)
 
 ALLOCATE_DEFINITION(Array)
 {
-     fprintf(stderr, "HERE 0");
     self->count = 0;
     self->max = 0;
     self->array = NULL;
     self->remove_callback = &nothing;
     self->insert_callback = &nothing;
     self->element_size = sizeof(void *);
-    fprintf(stderr, "HERE 1");
 }
 
 DISPOSE_DEFINITION(Array)
@@ -37,11 +35,10 @@ DISPOSE_DEFINITION(Array)
 
 REGISTER_CLASS(Array)
 
-inline static int max(a, b) { return a < b ? b : a; }
+inline static int max(int a, int b) { return a < b ? b : a; }
 
 inline static void array_ensure(Array *self, int elements)
 {
-    fprintf(stderr, "HERE");
     if (self->max < elements)
     {
         int nb = max(10, max(elements, self->count < 2000 ? self->count * 2 : self->count + 1000));

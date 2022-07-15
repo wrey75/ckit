@@ -8,6 +8,7 @@
 #include <string.h>
 #include <wchar.h>
 #include <assert.h>
+#include <wctype.h>
 #include "../include/class.h"
 #include "../include/memory.h"
 #include "../include/unistr.h"

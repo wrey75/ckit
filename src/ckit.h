@@ -16,6 +16,7 @@
 #include "include/types.h"
 #include "include/unistr.h"
 #include "include/array.h"
+#include "include/hashtable.h"
 
 extern long ckit_memory_check(void);
 extern void ckit_init();
