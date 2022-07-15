@@ -4,12 +4,43 @@
 #include <string.h>
 #include "../ckit.h"
 
+const char *fake_pointer = "_fake";
+
 #define RUN(a) \
     fprintf(stdout, "Running %s...", #a); \
     a(); \
     fprintf(stdout, " OK.\n"); 
 
 #define STEP fprintf(stdout, ".")
+
+void fastarray() {
+    const char **array = ARRAY_ALLOC(const char **, 0);
+    assert(ckit_array_size(array) == 0);
+    STEP;
+
+    array = ckit_array_realloc(array, 50);
+    assert(ckit_array_size(array) == 50);
+    for(int i = 0; i< 50; i++){
+        assert(array[i] == NULL);
+    }
+    STEP;
+
+    for(int i = 0; i< 50; i++){
+        array[i] = fake_pointer;
+    }
+    array = ckit_array_realloc(array, 200);
+    assert(ckit_array_size(array) == 200);
+    for(int i = 0; i< 200; i++){
+        if(i <50 ){
+            assert(array[i] == fake_pointer);
+        } else {
+            assert(array[i] == NULL);
+        }
+    }
+    STEP;
+
+    ckit_array_free(array);
+}
 
 void test1() {
     UString *str = NEW(UString);
@@ -25,7 +56,6 @@ void test1() {
 }
 
 void test2() {
-    fprintf(stderr, "HERE 22");
     Array *array = NEW(Array);
     array_add(array, (void *)38);
     array_add(array, (void *)42);
@@ -45,6 +75,7 @@ void test2() {
 int main(int argc, const char *argv[]){
     ckit_init();
     ckit_infos(stdout);
+    RUN(fastarray);
     RUN(test1);
     RUN(test2);
     ckit_infos(stdout);
