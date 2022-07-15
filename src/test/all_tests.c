@@ -11,6 +11,17 @@
 
 #define STEP fprintf(stdout, ".")
 
+void memory() {
+    char *ptr;
+    ptr = ckit_alloc(500);
+    assert(*ptr != 0);
+    ckit_memory_dump(stderr, ptr, 500);
+
+    STEP;
+    ckit_free(ptr);
+
+}
+
 void test1() {
     UString *str = NEW(UString);
     assert(ustr_length(str) == 0);
@@ -25,7 +36,6 @@ void test1() {
 }
 
 void test2() {
-    fprintf(stderr, "HERE 22");
     Array *array = NEW(Array);
     array_add(array, (void *)38);
     array_add(array, (void *)42);
@@ -42,9 +52,55 @@ void test2() {
     DEL(array);
 }
 
+void hashtable()
+{
+    Hashtable *hash = NEW(Hashtable);
+ hash_dump(hash, stderr);
+    
+    hash_set(hash, "William", "shakespeare");
+    hash_dump(hash, stderr);
+    
+    hash_set(hash, "Elphant", "man");
+    hash_set(hash, "jaja", "la grande");
+    hash_set(hash, "Amelie", "poulain");
+    hash_set(hash, "William", "rey");
+    hash_set(hash, "Thor", "Marvel");
+    hash_set(hash, "Jean", "de La Fontaine");
+
+    
+ fprintf(stderr, "mmm");
+    hash_set(hash, "Albert", "Londres");
+    hash_set(hash, "Alberta", "simona");
+    hash_set(hash, "Georges", "perec");
+    hash_set(hash, "Abigail", "abigail");
+    hash_set(hash, "Rossini", "rossini");
+    hash_set(hash, "Alberto", "alberto");
+    hash_set(hash, "Romeo", "romeo");
+    hash_set(hash, "Mandelsson", "hih chart");
+ 
+ 
+    hash_dump(hash, stderr);
+    const char *val = hash_get(hash, "William");
+   
+   
+    if(strcmp("rey", val) != 0) {
+        printf("Erreur - found: %s\n", val);
+    }
+
+    hash_resize(hash,12);
+     fprintf(stderr, "----NNNN %s", val); exit(0); 
+    // display();
+    
+    hash_resize(hash,4);
+    // display();
+    DEL(hash);
+}
+
 int main(int argc, const char *argv[]){
     ckit_init();
     ckit_infos(stdout);
+    RUN(hashtable);
+    RUN(memory);
     RUN(test1);
     RUN(test2);
     ckit_infos(stdout);
