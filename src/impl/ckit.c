@@ -12,8 +12,15 @@ void ckit_init(void) {
 
 }
 
-void ckit_exit(const char *message){
-    ckit_backtrace();
+void ckit_exit(const char *format, ...){
+    ckit_backtrace();                                  
+
+                 char message[255];                                                        
+   va_list arg_ptr;                                                             
+   va_start(arg_ptr, format);                                                      
+   vsprintf(message, sizeof(255), format, arg_ptr);                                              
+   va_end(arg_ptr);                                                             
+          
     fprintf(stderr, "**FATAL**: %s\n", message);
     exit(1);
 }

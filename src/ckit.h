@@ -8,6 +8,8 @@
 #define CKIT_DEBUG
 #endif
 
+#define CKIT_VERSION 0x0001
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>

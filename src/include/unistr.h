@@ -3,7 +3,7 @@
 #define _UNISTR_H__
 
 
-CLASS_DECLARE(UString)
+CLASS_DECLARE(String)
 
 /**
  * @brief create a UNICODE string from a basic string.
@@ -11,12 +11,14 @@ CLASS_DECLARE(UString)
  * 
  * @return UString* a new string 
  */
-extern UString* ustr_from(const char *source);
-extern void ustr_concat(UString *, const char *);
-extern void ustr_add(UString *, const UString *);
-extern void ustr_trim(UString *);
-extern void ustr_rtrim(UString *);
-extern void ustr_ltrim(UString *);
-extern size_t ustr_length(const UString *str);
-extern const wchar_t *ustr_buffer(const UString *str);
+extern String* str_from(const char *source);
+extern void str_strcat(String *, const char *);
+extern void str_wcscat(String *, const wchar_t *);
+extern void str_add(String *, const String *);
+extern void str_trim(String *);
+extern void str_rtrim(String *);
+extern void str_ltrim(String *);
+extern void str_char_at(String *, int);
+extern size_t str_length(const String *str);
+extern const wchar_t *ustr_buffer(const String *str);
 #endif
