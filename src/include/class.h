@@ -6,7 +6,6 @@ typedef struct
 {
     void *ptr;
     unsigned used : 1;
-
 } ckit_object_ptr;
 
 struct ckit_definition_class

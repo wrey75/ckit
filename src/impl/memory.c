@@ -10,7 +10,7 @@
 #define MAKER_SIZE 8
 
 // #define TRACE_MEMORY(...) fprintf(stderr, __VA_ARGS__)
-#define TRACE_MEMORY(...) 
+#define TRACE_MEMORY(...)
 
 static const char BEG_CHECK[MAKER_SIZE] = "((BEG[[<";
 static const char END_CHECK[MAKER_SIZE] = ">END]]))";
@@ -37,7 +37,7 @@ const ckit_memory_info *memory_infos(void)
     return &infos;
 }
 
-static ckit_memory_block *find_in_list(void *ptr)
+static ckit_memory_block *find_in_list(const void *ptr)
 {
     ckit_memory_block *available_alloc = NULL;
     int i;
@@ -57,24 +57,26 @@ static ckit_memory_block *find_in_list(void *ptr)
     {
         infos.allocations = realloc(infos.allocations, sizeof(ckit_memory_block) * (infos.count + 1));
         available_alloc = &infos.allocations[infos.count++];
+        TRACE_MEMORY("ckit::find_in_list(): Expanded the list to %i elements (ptr=%p)\n", infos.count, infos.allocations);
     }
+    available_alloc->ptr = (uint8_t *)ptr;
+    available_alloc->size = 0;
     available_alloc->used = 0;
+    available_alloc->allocationDate = 0L;
     return available_alloc;
 }
 
-static void add_to_list(void *ptr, int size)
+static void add_to_list(const void *ptr, int size)
 {
     ckit_memory_block *alloc = find_in_list(ptr);
-    alloc->ptr = ptr;
+    assert(!alloc->used);
+    alloc->ptr = (uint8_t *)ptr;
     alloc->used = 1;
     alloc->size = size;
-    if (alloc->allocationDate == 0)
-    {
-        alloc->allocationDate = time(NULL);
-    }
+    alloc->allocationDate = time(NULL);
 }
 
-static void remove_from_list(void *ptr)
+static void remove_from_list(const void *ptr)
 {
     ckit_memory_block *infos = find_in_list(ptr);
     infos->ptr = NULL;
@@ -118,24 +120,21 @@ void ckit_memory_dump(FILE *f, const void *ptr, size_t len)
 
 static void check_validity(const void *p, int size)
 {
-    // int i;
-    // for(i=0; i < MAKER_SIZE; i++){
-    //     if(ptr[i - MAKER_SIZE] == BEGIN_CHECK[i] || ptr[i + size] == END_CHECK[i]){
-    //        ckit_exit("Overridden memory.");
-    //    }
-    //}
     const char *ptr = p;
     assert(sizeof(int64_t) == MAKER_SIZE);
     int begin = memcmp(ptr - MAKER_SIZE, BEG_CHECK, MAKER_SIZE);
     int end = memcmp(ptr + size, END_CHECK, MAKER_SIZE);
     if (begin != 0 || end != 0)
     {
+        fprintf(stderr, "Memory issue at %p (size %i). Dump follows:\n", ptr, size);
         ckit_memory_dump(stderr, ptr - MAKER_SIZE, size + 2 * MAKER_SIZE);
-        ckit_exit("Overridden memory (see dump above).");
+        ckit_exit("Stopped due to damaged memory.");
     }
 }
 
-static uint8_t *debug_alloc(int size, const char *filler)
+#define FILLER '*'
+
+static uint8_t *debug_alloc(int size)
 {
     int i;
     uint8_t *ptr = malloc(size + MAKER_SIZE * 2);
@@ -144,14 +143,12 @@ static uint8_t *debug_alloc(int size, const char *filler)
     memcpy(ptr + size, END_CHECK, MAKER_SIZE);
     add_to_list(ptr, size);
     infos.total++;
-    TRACE_MEMORY("INFO: alloc %u bytes at %p\n", size, ptr);
-    if(filler){
-        int filler_len = strlen(filler);
-        for(int i=0; i < size; i++){
-            ptr[i] = filler[i % filler_len];
-        }
+    memset(ptr, FILLER, size);
+    ckit_validate_memory();
+    TRACE_MEMORY("INFO: allocated %u bytes at %p\n", size, ptr);
+    if(size == 1){
+        ckit_backtrace();
     }
-    check_validity(ptr, size);
     return ptr;
 }
 
@@ -164,7 +161,7 @@ static void debug_free(uint8_t *ptr)
         sprintf(buf, "Try to free a bad pointer (%p)", ptr);
         ckit_exit(buf);
     }
-    TRACE_MEMORY("INFO: freed %zu bytes at %p\n", alloc->size, ptr);
+    TRACE_MEMORY("INFO: freeing %zu bytes at %p...\n", alloc->size, ptr);
     check_validity(ptr, alloc->size);
     memset(ptr - MAKER_SIZE, 'x', alloc->size + 2 * MAKER_SIZE); // ensure data is wrapped.
     alloc->ptr = NULL;
@@ -183,20 +180,25 @@ static void *debug_realloc(uint8_t *ptr, size_t newsize)
     ckit_memory_block *infos = find_in_list(ptr);
     if (!infos->used)
     {
-        ckit_exit("Try to reallocate memory an used pointer.");
+        ckit_exit("Pointer is illegal (not allocated or freed).");
     }
     size_t size = infos->size;
     check_validity(infos->ptr, infos->size);
-    uint8_t *newptr = debug_alloc(newsize, NULL);
-    memcpy(newptr, infos->ptr, infos->size);
-    if(newsize > infos->size){
-        memset(&newptr[infos->size], 0, newsize - infos->size);
+    uint8_t *newptr = debug_alloc(newsize);
+    check_validity(newptr, newsize);
+ckit_validate_memory();
+    if (newsize > infos->size)
+    {
+        TRACE_MEMORY("INFO: copying data + adding filler\n");
+        memcpy(newptr, infos->ptr, infos->size);
+        // memset(&newptr[infos->size], FILLER, newsize - infos->size);
+    } else {
+        TRACE_MEMORY("INFO: copying original data up to %zu bytes\n", newsize);
+        memcpy(newptr, infos->ptr, newsize);
     }
-    TRACE_MEMORY("INFO: realloc %zu (%p) --> %zu (%p)\n", size, ptr, newsize, newptr);
+    TRACE_MEMORY("INFO: reallocated %zu (%p) --> %zu (%p)\n", size, ptr, newsize, newptr);
+    ckit_validate_memory();
     debug_free(ptr);
-    // infos->size = newsize;
-    // infos->ptr = newptr;
-    // infos->used = 1; // because the block is freed.
     return newptr;
 }
 
@@ -205,7 +207,7 @@ void *ckit_alloc(size_t size)
     size = size < 1 ? 1 : size;
     uint8_t *ptr;
 #ifdef CKIT_DEBUG
-    ptr = debug_alloc(size, "__initialized_data__");
+    ptr = debug_alloc(size);
 #else
     ptr = malloc(size);
 #endif
@@ -250,143 +252,29 @@ void *ckit_realloc(void *ptr, size_t newsize)
     return new_ptr;
 }
 
-struct ckit_extra_info
+void ckit_memory_check(const void *ptr)
 {
-    struct ckit_definition_class *class_ptr;
-};
-
-#define EXTRA_BYTES sizeof(struct ckit_extra_info)
-
-struct ckit_definition_class ** ckit_classes = NULL;
-static int registered_classes = 0;
-
-void *ckit_new_object(struct ckit_definition_class *def)
-{
-    struct ckit_extra_info *data = ckit_alloc(def->size + EXTRA_BYTES);
-    int8_t *ptr = (int8_t *)data + EXTRA_BYTES;
-    assert(def != NULL);
-    assert(def->construct_fnct != NULL);
-    (*def->construct_fnct)(ptr);
-    data->class_ptr = def;
-    data->class_ptr->in_use++;
-    data->class_ptr->total++;
-       //   fprintf(stderr, "ptr.. %p...", data->class_ptr);
-
-      TRACE_MEMORY("REALLOC: %p + %p.\n", ckit_classes, data->class_ptr->list);
-    if(data->class_ptr->list == NULL){
-        // We register the class at first allocation.
-        TRACE_MEMORY("REALLOC.. %p.", ckit_classes);
-        ckit_classes = ckit_realloc(ckit_classes, sizeof(void *) * (1+registered_classes));
-        TRACE_MEMORY("OK.\n");
-        ckit_classes[registered_classes++] = data->class_ptr;
-    }
-    
-    ckit_object_ptr *newptr = NULL;
-    for (int i = 0; !newptr && i < def->allocated; i++)
+    ckit_memory_block *alloc = find_in_list(ptr);
+    if (alloc == NULL || !alloc->used)
     {
-        if (def->list[i].ptr == NULL)
+        char buff[100];
+        sprintf(buff, "Pointeur %p is not currently in use!", ptr);
+        ckit_exit(buff);
+    }
+    check_validity(ptr, alloc->size);
+}
+
+int ckit_validate_memory()
+{
+    int checked = 0;
+    int i = 0;
+    for (i = 0; i < infos.count; i++)
+    {
+        if (infos.allocations[i].used)
         {
-            newptr = &def->list[i];
+            check_validity(infos.allocations[i].ptr, infos.allocations[i].size);
+            checked++;
         }
     }
-    if (newptr == NULL)
-    {
-        // Add an entry
-        def->list = ckit_realloc(def->list, def->allocated + 1);
-        newptr = &def->list[def->allocated];
-        def->allocated++;
-    }
-    newptr->ptr = ptr;
-    newptr->used = 1;
-    return ptr;
-}
-
-void *ckit_del_object(void *ptr)
-{
-    struct ckit_extra_info *data;
-    data = (struct ckit_extra_info *)(((int8_t *)ptr) - EXTRA_BYTES);
-    int found_allocation = 0;
-    for (int i = 0; i < data->class_ptr->allocated; i++)
-    {
-        if (data->class_ptr->list[i].ptr == ptr)
-        {
-            // free for future use
-            data->class_ptr->list[i].used = 0;
-            found_allocation = 1;
-        }
-    }
-    assert(found_allocation);
-    (*data->class_ptr->finalize_fnct)(ptr);
-    data->class_ptr->in_use--;
-    ckit_free(data);
-    return NULL;
-}
-
-long ckit_memory_check(){
-    long total = 0;
-#ifdef CKIT_DEBUG
-    for (int i = 0; i < infos.count; i++)
-    {
-        if (!infos.allocations[i].used)
-        {
-            size_t size = infos.allocations[i].size;
-            total += size;
-            check_validity(infos.allocations[i].ptr, size);
-        }
-    }
-#endif
-    return total;
-}
-
-void ckit_infos(FILE *f)
-{
-#ifdef NDEBUG
-    fprintf(f, "RELEASE MODE\n");
-#endif
-#ifdef CKIT_DEBUG
-    fprintf(f, "CKIT DEBUG MODE\n");
-    const ckit_memory_info *infos = memory_infos();
-    long bytes = 0;
-    size_t used = 0;
-    size_t biggest = 0;
-    for (int i = 0; i < infos->count; i++)
-    {
-        if (infos->allocations[i].used){
-            used++;
-            if (biggest < infos->allocations[i].size){
-                biggest = infos->allocations[i].size;
-            }
-            bytes += infos->allocations[i].size;
-        }
-    }
-    fprintf(f, "MEMORY: %zu/%u slots, %u done, %li bytes used.\n", 
-        used, infos->count, infos->total, bytes);
-#endif
-}
-
-void ckit_object_list(FILE *f){
-    fprintf(f, "                     Class name     Live  Maximum  Allocated\n");
-    fprintf(f, " ------------------------------ -------- -------- ----------\n");
-    for(int i = 0; i < registered_classes; i++){
-        struct ckit_definition_class *class_info = ckit_classes[i];
-        fprintf(f, " %30s %8i %8i %10i\n", class_info->name, class_info->in_use, class_info->allocated, class_info->total);
-    }
-}
-
-void *ckit_calloc(size_t nmemb, size_t size)
-{
-    uint8_t *ptr;
-#ifdef CKIT_DEBUG
-    ptr = debug_alloc(nmemb * size, NULL);
-    if(ptr != NULL){
-        memset(ptr, 0, nmemb * size);
-    }
-#else
-    ptr = calloc(nmemb, size);
-#endif
-    if (ptr == NULL)
-    {
-        ckit_exit("Unable to allocate memory.");
-    }
-    return ptr;
+    return checked;
 }

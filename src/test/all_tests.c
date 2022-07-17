@@ -4,25 +4,70 @@
 #include <string.h>
 #include "../ckit.h"
 
+const char *fake_pointer = "_fake";
+
 #define RUN(a) \
+    ckit_validate_memory(); \
     fprintf(stdout, "Running %s...", #a); \
     a(); \
     fprintf(stdout, " OK.\n"); 
 
-#define STEP fprintf(stdout, ".")
+#define STEP \
+    ckit_validate_memory(); \
+    fprintf(stdout, "."); \
+
+
 
 void memory() {
     char *ptr;
     ptr = ckit_alloc(500);
     assert(*ptr != 0);
-    ckit_memory_dump(stderr, ptr, 500);
 
+    ptr = ckit_realloc(ptr,550);
+    assert(*ptr != 0);
+    STEP;
+
+    ptr = ckit_realloc(ptr,15);
+    assert(*ptr != 0);
+    
     STEP;
     ckit_free(ptr);
-
 }
 
-void test1() {
+void fastarray() {
+    const char **array = ARRAY_ALLOC(const char *, 0);
+    assert(ckit_array_size(array) == 0);
+    STEP;
+
+    array = ckit_array_realloc(array, 50);
+    assert(ckit_array_size(array) == 50);
+    for(int i = 0; i< 50; i++){
+        assert(array[i] == NULL);
+    }
+    STEP;
+
+    for(int i = 0; i < 50; i++){
+        array[i] = fake_pointer;
+    }
+    array = ckit_array_realloc(array, 200);
+    assert(ckit_array_size(array) == 200);
+    for(int i = 0; i< 200; i++){
+        if(i <50 ){
+            assert(array[i] == fake_pointer);
+        } else {
+            assert(array[i] == NULL);
+        }
+    }
+    STEP;
+
+    array = ckit_array_realloc(array, 12);
+    assert(ckit_array_size(array) == 12);
+    STEP;
+
+    ckit_array_free(array);
+}
+
+void object_UString() {
     UString *str = NEW(UString);
     assert(ustr_length(str) == 0);
     STEP;
@@ -35,7 +80,7 @@ void test1() {
     DEL(str);
 }
 
-void test2() {
+void object_Array() {
     Array *array = NEW(Array);
     array_add(array, (void *)38);
     array_add(array, (void *)42);
@@ -55,54 +100,78 @@ void test2() {
 void hashtable()
 {
     Hashtable *hash = NEW(Hashtable);
- hash_dump(hash, stderr);
-    
+  
     hash_set(hash, "William", "shakespeare");
-    hash_dump(hash, stderr);
-    
+    assert(hash_size(hash) == 1);
+    STEP;
     hash_set(hash, "Elphant", "man");
+    assert(hash_size(hash) == 2);
+    STEP;
     hash_set(hash, "jaja", "la grande");
+    assert(hash_size(hash) == 3);
+    STEP;
     hash_set(hash, "Amelie", "poulain");
-    hash_set(hash, "William", "rey");
+    assert(hash_size(hash) == 4);
+    STEP;
+    hash_set(hash, "William", "rey"); // replace
+    assert(hash_size(hash) == 4); 
+    STEP;
     hash_set(hash, "Thor", "Marvel");
+    assert(hash_size(hash) == 5); 
+    STEP;
     hash_set(hash, "Jean", "de La Fontaine");
-
-    
- fprintf(stderr, "mmm");
+    assert(hash_size(hash) == 6); 
+    STEP;
     hash_set(hash, "Albert", "Londres");
+    assert(hash_size(hash) == 7); 
+    STEP;
     hash_set(hash, "Alberta", "simona");
+    assert(hash_size(hash) == 8); 
+    STEP;
     hash_set(hash, "Georges", "perec");
+    assert(hash_size(hash) == 9); 
+    STEP;
     hash_set(hash, "Abigail", "abigail");
+    assert(hash_size(hash) == 10); 
+    STEP;
     hash_set(hash, "Rossini", "rossini");
+    assert(hash_size(hash) == 11); 
+    STEP;
     hash_set(hash, "Alberto", "alberto");
+    assert(hash_size(hash) == 12); 
+    STEP;
     hash_set(hash, "Romeo", "romeo");
+    assert(hash_size(hash) == 13); 
+    STEP;
     hash_set(hash, "Mandelsson", "hih chart");
+    STEP;
  
- 
-    hash_dump(hash, stderr);
     const char *val = hash_get(hash, "William");
-   
-   
-    if(strcmp("rey", val) != 0) {
-        printf("Erreur - found: %s\n", val);
-    }
+    assert(strcmp("rey", val) == 0);
+    STEP;
 
     hash_resize(hash,12);
-     fprintf(stderr, "----NNNN %s", val); exit(0); 
-    // display();
+    STEP;
     
     hash_resize(hash,4);
-    // display();
+    const char *val1 = hash_get(hash, "William");
+    assert(strcmp("rey", val1) == 0);
+    STEP;
+
+    // hash_dump(hash, stderr);
     DEL(hash);
 }
 
 int main(int argc, const char *argv[]){
     ckit_init();
     ckit_infos(stdout);
-    RUN(hashtable);
+    ckit_validate_memory();
+
     RUN(memory);
-    RUN(test1);
-    RUN(test2);
+    RUN(fastarray);
+    RUN(hashtable);
+    RUN(object_UString);
+    RUN(object_Array);
     ckit_infos(stdout);
     ckit_object_list(stderr);
 }
