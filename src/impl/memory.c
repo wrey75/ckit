@@ -278,3 +278,29 @@ int ckit_validate_memory()
     }
     return checked;
 }
+
+
+void ckit_infos(FILE *f)
+{
+#ifdef NDEBUG
+    fprintf(f, "CKIT MODE RELEASE\n");
+#else
+    fprintf(f, "CKIT MODE DEBUG\n");
+    const ckit_memory_info *infos = memory_infos();
+    long bytes = 0;
+    size_t used = 0;
+    size_t biggest = 0;
+    for (int i = 0; i < infos->count; i++)
+    {
+        if (infos->allocations[i].used){
+            used++;
+            if (biggest < infos->allocations[i].size){
+                biggest = infos->allocations[i].size;
+            }
+            bytes += infos->allocations[i].size;
+        }
+    }
+    fprintf(f, "MEMORY: %zu/%u slots, %u done, %li bytes used.\n", 
+        used, infos->count, infos->total, bytes);
+#endif
+}

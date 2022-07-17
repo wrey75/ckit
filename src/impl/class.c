@@ -73,32 +73,6 @@ void *ckit_del_object(void *ptr)
     return NULL;
 }
 
-void ckit_infos(FILE *f)
-{
-#ifdef NDEBUG
-    fprintf(f, "RELEASE MODE\n");
-#endif
-#ifdef CKIT_DEBUG
-    fprintf(f, "CKIT DEBUG MODE\n");
-    const ckit_memory_info *infos = memory_infos();
-    long bytes = 0;
-    size_t used = 0;
-    size_t biggest = 0;
-    for (int i = 0; i < infos->count; i++)
-    {
-        if (infos->allocations[i].used){
-            used++;
-            if (biggest < infos->allocations[i].size){
-                biggest = infos->allocations[i].size;
-            }
-            bytes += infos->allocations[i].size;
-        }
-    }
-    fprintf(f, "MEMORY: %zu/%u slots, %u done, %li bytes used.\n", 
-        used, infos->count, infos->total, bytes);
-#endif
-}
-
 void ckit_object_list(FILE *f){
     fprintf(f, "                     Class name     Live  Maximum  Allocated\n");
     fprintf(f, " ------------------------------ -------- -------- ----------\n");
