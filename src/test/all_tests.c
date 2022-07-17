@@ -68,15 +68,15 @@ void fastarray() {
 }
 
 void object_UString() {
-    UString *str = NEW(UString);
-    assert(ustr_length(str) == 0);
+    String *str = NEW(String);
+    assert(str_length(str) == 0);
     STEP;
-    ustr_concat(str, "  Le chat est mort. ");
-    assert(ustr_length(str) == strlen("  Le chat est mort. "));
+    str_strcat(str, "  Le chat est mort. ");
+    assert(str_length(str) == strlen("  Le chat est mort. "));
     STEP;
-    ustr_trim(str);
+    str_trim(str);
     //  printf("[%ls] = %zu chars\n", ustr_buffer(str), ustr_length(str));
-    assert(ustr_length(str) == strlen("Le chat est mort."));
+    assert(str_length(str) == strlen("Le chat est mort."));
     DEL(str);
 }
 
