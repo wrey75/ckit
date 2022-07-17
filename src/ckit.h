@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "include/memory.h"
+#include "include/fastarray.h"
 #include "include/class.h"
 #include "include/types.h"
 #include "include/unistr.h"
