@@ -28,7 +28,7 @@ void *ckit_new_object(struct ckit_definition_class *def)
     data->class_ptr->total++;
     if(data->class_ptr->list == NULL){
         // We register the class at first allocation.
-        ckit_classes = ckit_realloc(ckit_classes, sizeof(void *) * (1+registered_classes));
+        ckit_classes = ckit_realloc(ckit_classes, sizeof(ckit_object_ptr) * (1+registered_classes));
         ckit_classes[registered_classes++] = data->class_ptr;
     }
     
@@ -43,7 +43,7 @@ void *ckit_new_object(struct ckit_definition_class *def)
     if (newptr == NULL)
     {
         // Add an entry
-        def->list = ckit_realloc(def->list, def->allocated + 1);
+        def->list = ckit_realloc(def->list, (def->allocated + 1) * sizeof(ckit_object_ptr));
         newptr = &def->list[def->allocated];
         def->allocated++;
     }
@@ -71,22 +71,6 @@ void *ckit_del_object(void *ptr)
     data->class_ptr->in_use--;
     ckit_free(data);
     return NULL;
-}
-
-long ckit_memory_check(){
-    long total = 0;
-#ifdef CKIT_DEBUG
-    for (int i = 0; i < infos.count; i++)
-    {
-        if (!infos.allocations[i].used)
-        {
-            size_t size = infos.allocations[i].size;
-            total += size;
-            check_validity(infos.allocations[i].ptr, size);
-        }
-    }
-#endif
-    return total;
 }
 
 void ckit_infos(FILE *f)

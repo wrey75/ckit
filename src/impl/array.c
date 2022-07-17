@@ -35,7 +35,7 @@ DISPOSE_DEFINITION(Array)
 
 REGISTER_CLASS(Array)
 
-inline static int max(a, b) { return a < b ? b : a; }
+inline static int max(int a, int b) { return a < b ? b : a; }
 
 inline static void array_ensure(Array *self, int elements)
 {

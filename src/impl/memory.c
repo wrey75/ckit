@@ -8,6 +8,10 @@
 #include "../ckit.h"
 
 #define MAKER_SIZE 8
+
+// #define TRACE_MEMORY(...) fprintf(stderr, __VA_ARGS__)
+#define TRACE_MEMORY(...)
+
 static const char BEG_CHECK[MAKER_SIZE] = "((BEG[[<";
 static const char END_CHECK[MAKER_SIZE] = ">END]]))";
 
@@ -33,7 +37,7 @@ const ckit_memory_info *memory_infos(void)
     return &infos;
 }
 
-static ckit_memory_block *find_in_list(void *ptr)
+static ckit_memory_block *find_in_list(const void *ptr)
 {
     ckit_memory_block *available_alloc = NULL;
     int i;
@@ -53,24 +57,26 @@ static ckit_memory_block *find_in_list(void *ptr)
     {
         infos.allocations = realloc(infos.allocations, sizeof(ckit_memory_block) * (infos.count + 1));
         available_alloc = &infos.allocations[infos.count++];
+        TRACE_MEMORY("ckit::find_in_list(): Expanded the list to %i elements (ptr=%p)\n", infos.count, infos.allocations);
     }
+    available_alloc->ptr = (uint8_t *)ptr;
+    available_alloc->size = 0;
     available_alloc->used = 0;
+    available_alloc->allocationDate = 0L;
     return available_alloc;
 }
 
-static void add_to_list(void *ptr, int size)
+static void add_to_list(const void *ptr, int size)
 {
     ckit_memory_block *alloc = find_in_list(ptr);
-    alloc->ptr = ptr;
+    assert(!alloc->used);
+    alloc->ptr = (uint8_t *)ptr;
     alloc->used = 1;
     alloc->size = size;
-    if (alloc->allocationDate == 0)
-    {
-        alloc->allocationDate = time(NULL);
-    }
+    alloc->allocationDate = time(NULL);
 }
 
-static void remove_from_list(void *ptr)
+static void remove_from_list(const void *ptr)
 {
     ckit_memory_block *infos = find_in_list(ptr);
     infos->ptr = NULL;
@@ -114,22 +120,19 @@ void ckit_memory_dump(FILE *f, const void *ptr, size_t len)
 
 static void check_validity(const void *p, int size)
 {
-    // int i;
-    // for(i=0; i < MAKER_SIZE; i++){
-    //     if(ptr[i - MAKER_SIZE] == BEGIN_CHECK[i] || ptr[i + size] == END_CHECK[i]){
-    //        ckit_exit("Overridden memory.");
-    //    }
-    //}
     const char *ptr = p;
     assert(sizeof(int64_t) == MAKER_SIZE);
     int begin = memcmp(ptr - MAKER_SIZE, BEG_CHECK, MAKER_SIZE);
     int end = memcmp(ptr + size, END_CHECK, MAKER_SIZE);
     if (begin != 0 || end != 0)
     {
+        fprintf(stderr, "Memory issue at %p (size %i). Dump follows:\n", ptr, size);
         ckit_memory_dump(stderr, ptr - MAKER_SIZE, size + 2 * MAKER_SIZE);
-        ckit_exit("Overridden memory (see dump above).");
+        ckit_exit("Stopped due to damaged memory.");
     }
 }
+
+#define FILLER '*'
 
 static uint8_t *debug_alloc(int size)
 {
@@ -140,9 +143,12 @@ static uint8_t *debug_alloc(int size)
     memcpy(ptr + size, END_CHECK, MAKER_SIZE);
     add_to_list(ptr, size);
     infos.total++;
-    fprintf(stderr, "INFO: alloc %u bytes at %p\n", size, ptr);
-    // hexa_dump(stderr, ptr - MAKER_SIZE, size + MAKER_SIZE * 2);
-    check_validity(ptr, size);
+    memset(ptr, FILLER, size);
+    ckit_validate_memory();
+    TRACE_MEMORY("INFO: allocated %u bytes at %p\n", size, ptr);
+    if(size == 1){
+        ckit_backtrace();
+    }
     return ptr;
 }
 
@@ -151,9 +157,11 @@ static void debug_free(uint8_t *ptr)
     ckit_memory_block *alloc = find_in_list(ptr);
     if (!alloc->used)
     {
-        ckit_exit("Try to free a bad pointer.");
+        char buf[100];
+        sprintf(buf, "Try to free a bad pointer (%p)", ptr);
+        ckit_exit(buf);
     }
-    fprintf(stderr, "INFO: freed %zu bytes at %p\n", alloc->size, ptr);
+    TRACE_MEMORY("INFO: freeing %zu bytes at %p...\n", alloc->size, ptr);
     check_validity(ptr, alloc->size);
     memset(ptr - MAKER_SIZE, 'x', alloc->size + 2 * MAKER_SIZE); // ensure data is wrapped.
     alloc->ptr = NULL;
@@ -172,22 +180,31 @@ static void *debug_realloc(uint8_t *ptr, size_t newsize)
     ckit_memory_block *infos = find_in_list(ptr);
     if (!infos->used)
     {
-        ckit_exit("Try to reallocate memory an used pointer.");
+        ckit_exit("Pointer is illegal (not allocated or freed).");
     }
     size_t size = infos->size;
     check_validity(infos->ptr, infos->size);
     uint8_t *newptr = debug_alloc(newsize);
-    memcpy(newptr, infos->ptr, infos->size);
-    fprintf(stderr, "INFO: realloc %zu (%p) --> %zu (%p)\n", size, ptr, newsize, newptr);
+    check_validity(newptr, newsize);
+ckit_validate_memory();
+    if (newsize > infos->size)
+    {
+        TRACE_MEMORY("INFO: copying data + adding filler\n");
+        memcpy(newptr, infos->ptr, infos->size);
+        // memset(&newptr[infos->size], FILLER, newsize - infos->size);
+    } else {
+        TRACE_MEMORY("INFO: copying original data up to %zu bytes\n", newsize);
+        memcpy(newptr, infos->ptr, newsize);
+    }
+    TRACE_MEMORY("INFO: reallocated %zu (%p) --> %zu (%p)\n", size, ptr, newsize, newptr);
+    ckit_validate_memory();
     debug_free(ptr);
-    // infos->size = newsize;
-    // infos->ptr = newptr;
-    // infos->used = 1; // because the block is freed.
     return newptr;
 }
 
 void *ckit_alloc(size_t size)
 {
+    size = size < 1 ? 1 : size;
     uint8_t *ptr;
 #ifdef CKIT_DEBUG
     ptr = debug_alloc(size);
@@ -222,6 +239,7 @@ void *ckit_realloc(void *ptr, size_t newsize)
         // We adhere to realloc contract.
         return ckit_alloc(newsize);
     }
+    newsize = newsize < 1 ? 1 : newsize;
 #ifdef CKIT_DEBUG
     new_ptr = debug_realloc(ptr, newsize);
 #else
@@ -232,4 +250,31 @@ void *ckit_realloc(void *ptr, size_t newsize)
         ckit_exit("Unable to reallocate memory.");
     }
     return new_ptr;
+}
+
+void ckit_memory_check(const void *ptr)
+{
+    ckit_memory_block *alloc = find_in_list(ptr);
+    if (alloc == NULL || !alloc->used)
+    {
+        char buff[100];
+        sprintf(buff, "Pointeur %p is not currently in use!", ptr);
+        ckit_exit(buff);
+    }
+    check_validity(ptr, alloc->size);
+}
+
+int ckit_validate_memory()
+{
+    int checked = 0;
+    int i = 0;
+    for (i = 0; i < infos.count; i++)
+    {
+        if (infos.allocations[i].used)
+        {
+            check_validity(infos.allocations[i].ptr, infos.allocations[i].size);
+            checked++;
+        }
+    }
+    return checked;
 }
