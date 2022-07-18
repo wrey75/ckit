@@ -21,8 +21,8 @@ struct ckit_definition_class
 };
 
 #define CLASS_DECLARE(a)        \
-    typedef struct ckit__##a a; \
-    extern struct ckit_definition_class ckit_class_##a;
+    extern struct ckit_definition_class ckit_class_##a; \
+    typedef struct ckit__##a a;
 
 #define DEFINE_CLASS(a) struct ckit__##a
 
@@ -32,7 +32,7 @@ struct ckit_definition_class
  * Note we need 2 static methods to avoid a compilation warning. Not
  * a good way to do due to a specific call...
  */
-#define REGISTER_CLASS(a)                           \
+#define REGISTER_CLASS(a) \
     static void ckit_construct0_##a(void *ptr)      \
     {                                               \
         ckit_construct_##a((a *)ptr);               \
