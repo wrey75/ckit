@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <stdio.h>
 #include <string.h>
+#include <wchar.h>
 #include "../ckit.h"
 
 const char *fake_pointer = "_fake";
@@ -16,7 +17,15 @@ const char *fake_pointer = "_fake";
     ckit_validate_memory(); \
     fprintf(stdout, "."); \
 
-
+void md5() {
+    UString *str;
+    char md5buf[16];
+    const char *test = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
+    str = md5_string((const unsigned char *)test, strlen(test));
+    const wchar_t *buf = ustr_buffer(str);
+    assert(wcscmp(buf, L"35899082e51edf667f14477ac000cbba") == 0);
+    DEL(str);
+}
 
 void memory() {
     char *ptr;
@@ -167,6 +176,7 @@ int main(int argc, const char *argv[]){
     ckit_infos(stdout);
     ckit_validate_memory();
 
+    RUN(md5);
     RUN(memory);
     RUN(fastarray);
     RUN(hashtable);
