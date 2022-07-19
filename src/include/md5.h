@@ -45,8 +45,8 @@ typedef struct md5_context MD5_CTX;
 extern MD5_CTX *md5_init(void);
 extern void md5_update(MD5_CTX *mdContext, const unsigned char *inBuf, unsigned int inLen);
 extern void md5_finalize(MD5_CTX *mdContext, unsigned char digest[16]);
-
-extern UString *md5_string(const unsigned char *buf, unsigned int len);
+extern char *md5_string(const unsigned char *buf, unsigned int len);
+extern void md5_free(char *digest);
 
 #endif
 

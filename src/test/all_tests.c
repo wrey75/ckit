@@ -17,14 +17,35 @@ const char *fake_pointer = "_fake";
     ckit_validate_memory(); \
     fprintf(stdout, "."); \
 
+
+void base64() {
+    const char *src = "Le chat est dans le parking";
+    char *encoded = base64_encode((const uint8_t *)src, strlen(src)+1);
+    if(strcmp(encoded, "TGUgY2hhdCBlc3QgZGFucyBsZSBwYXJraW5nAA==") != 0){
+        char error[200];
+        sprintf(error, "Not expected: %s.", encoded);
+        ckit_exit(error);
+    }
+    STEP;
+    CMemory *mem = base64_decode(encoded);
+    
+    ckit_validate_memory();
+    // cmemory_dump(mem,stdout);
+    // printf("code: %20s\n",(const char *)cmemory_buffer(mem, -1));
+    assert(strcmp(src, (const char *)cmemory_buffer(mem, -1)) == 0);
+     // cmemory_dump(mem,stdout);
+    STEP;
+    base64_free(encoded);
+    DEL(mem);
+}
+
 void md5() {
-    UString *str;
+    char *digest;
     char md5buf[16];
     const char *test = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.";
-    str = md5_string((const unsigned char *)test, strlen(test));
-    const wchar_t *buf = ustr_buffer(str);
-    assert(wcscmp(buf, L"35899082e51edf667f14477ac000cbba") == 0);
-    DEL(str);
+    digest = md5_string((const unsigned char *)test, strlen(test));
+    assert(strcmp(digest, "35899082e51edf667f14477ac000cbba") == 0);
+    md5_free(digest);
 }
 
 void memory() {
@@ -44,7 +65,7 @@ void memory() {
 }
 
 void fastarray() {
-    const char **array = ARRAY_ALLOC(const char *, 0);
+    const char **array = ARRAY_ALLOC(0, const char *);
     assert(ckit_array_size(array) == 0);
     STEP;
 
@@ -177,6 +198,7 @@ int main(int argc, const char *argv[]){
     ckit_validate_memory();
 
     RUN(md5);
+    RUN(base64);
     RUN(memory);
     RUN(fastarray);
     RUN(hashtable);

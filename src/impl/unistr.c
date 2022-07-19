@@ -47,9 +47,6 @@ size_t ustr_length(const UString *str) {
     return str->len;
 }
 
-const wchar_t *ustr_buffer(const UString *str){
-    return (const wchar_t *)str->buf;
-}
 
 static void ustr_ensure(UString *str, int requested){
     if(requested >= str->size){
