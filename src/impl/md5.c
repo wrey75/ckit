@@ -282,11 +282,12 @@ UINT4 *in;
   buf[3] += d;
 }
 
+#define MAGIC_NUMBER "md5"
 #define HEXA "0123456789abcdef"
 
-UString *md5_string(const unsigned char *buf, unsigned int len){
+char *md5_string(const unsigned char *buf, unsigned int len){
     uint8_t digest[16];
-    char outbuf[33];
+    char *outbuf = ckit_magic_alloc(33, MAGIC_NUMBER);
     MD5_CTX *context = md5_init();
     md5_update(context, buf, len);
     md5_finalize(context, digest);
@@ -296,7 +297,11 @@ UString *md5_string(const unsigned char *buf, unsigned int len){
         outbuf[pos++] = HEXA[(digest[i] & 0x0f)];
     }
     outbuf[pos] = '\0';
-    return ustr_from(outbuf);
+    return outbuf;
+}
+
+void md5_free(char *digest){
+    ckit_magic_free(digest, MAGIC_NUMBER);
 }
 
 /*

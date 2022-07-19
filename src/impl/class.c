@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <assert.h>
+#include "../ckit.h"
 #include "../include/memory.h"
 #include "../include/class.h"
 
@@ -57,6 +58,9 @@ void *ckit_del_object(void *ptr)
     struct ckit_extra_info *data;
     data = (struct ckit_extra_info *)(((int8_t *)ptr) - EXTRA_BYTES);
     int found_allocation = 0;
+    if(data->class_ptr->magic != CKIT_MAGIC_CLASS_NUMBER){
+        ckit_exit("The pointer is not an object!");
+    }
     for (int i = 0; i < data->class_ptr->allocated; i++)
     {
         if (data->class_ptr->list[i].ptr == ptr)

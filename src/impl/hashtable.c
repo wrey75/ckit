@@ -31,7 +31,7 @@ ALLOCATE_DEFINITION(Hashtable)
     self->factor = 0.75;
     self->size = INITIAL_SIZE;
     self->count = 0;
-    self->array = ARRAY_ALLOC(struct DataItem *, self->size);
+    self->array = ARRAY_ALLOC(self->size, struct DataItem *);
 }
 
 DISPOSE_DEFINITION(Hashtable)
@@ -94,7 +94,7 @@ static struct DataItem *new_item(Hashtable *self, const char *key)
     if (self->array[hash] == NULL){
         ckit_validate_memory();
         TRACE("Hastable::new_item(): creates a new chain for index %i at %p\n", hash, self->array[hash]); 
-        self->array[hash] = ARRAY_ALLOC(struct DataItem, 2);
+        self->array[hash] = ARRAY_ALLOC(2, struct DataItem);
         ckit_validate_memory();
         return self->array[hash];
     } else {
@@ -187,7 +187,7 @@ void hash_resize(Hashtable *self, int newsize)
     struct DataItem **array0 = self->array;
     int size0 = self->size;
     self->size = newsize;
-    self->array = ckit_array_alloc(sizeof(struct DataItem), newsize);
+    self->array = ckit_array_alloc(newsize, sizeof(struct DataItem));
     int i;
     for (i = 0; i < size0; i++)
     {

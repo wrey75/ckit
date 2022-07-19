@@ -18,5 +18,5 @@ extern void ustr_trim(UString *);
 extern void ustr_rtrim(UString *);
 extern void ustr_ltrim(UString *);
 extern size_t ustr_length(const UString *str);
-extern const wchar_t *ustr_buffer(const UString *str);
+extern wchar_t *ustr_buffer(const UString *str);
 #endif

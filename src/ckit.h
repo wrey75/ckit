@@ -19,6 +19,8 @@
 #include "include/array.h"
 #include "include/hashtable.h"
 #include "include/md5.h"
+#include "include/cmemory.h"
+#include "include/base64.h"
 
 extern void ckit_init();
 extern void ckit_infos(FILE *);

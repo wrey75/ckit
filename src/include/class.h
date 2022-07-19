@@ -10,6 +10,7 @@ typedef struct
 
 struct ckit_definition_class
 {
+    int magic;
     const char *name;  // class name
     const size_t size; // size of the object
     void (*construct_fnct)(void *ptr);
@@ -25,6 +26,7 @@ struct ckit_definition_class
     typedef struct ckit__##a a;
 
 #define DEFINE_CLASS(a) struct ckit__##a
+#define CKIT_MAGIC_CLASS_NUMBER  0x0bec
 
 /**
  * @brief Register the class
@@ -42,6 +44,7 @@ struct ckit_definition_class
         ckit_finalize_##a((a *)ptr);                \
     }                                               \
     struct ckit_definition_class ckit_class_##a = { \
+        .magic = CKIT_MAGIC_CLASS_NUMBER,           \
         .name = #a,                                 \
         .size = sizeof(struct ckit__##a),           \
         .construct_fnct = &ckit_construct0_##a,     \

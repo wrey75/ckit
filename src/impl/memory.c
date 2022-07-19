@@ -186,7 +186,7 @@ static void *debug_realloc(uint8_t *ptr, size_t newsize)
     check_validity(infos->ptr, infos->size);
     uint8_t *newptr = debug_alloc(newsize);
     check_validity(newptr, newsize);
-ckit_validate_memory();
+    ckit_validate_memory();
     if (newsize > infos->size)
     {
         TRACE_MEMORY("INFO: copying data + adding filler\n");

@@ -10,17 +10,18 @@ extern void *ckit_realloc(void *, size_t newsize);
  * @brief make an hexadecimal dump on the specified file.
  * 
  * Display 16 bytes per line, very basic but useful to check part of
- * memory.
+ * memory. 
  * 
  * @param out the file where to write (usually "stderr" or "stdout").
  * @param ptr the start of the pointer.
- * @param size the size in bytes.
+ * @param size the size in bytes. If zero, nothing is displayed.
  */
 extern void ckit_memory_dump(FILE *out, const void *ptr, size_t size);
 
 /**
  * Check a pointer allocated by ckit_alloc() or ckit_realloc. The pointer MUST not be
- * freed.
+ * freed. Pointeurs allocated by other methods are NOT valid, inluding (but not limited
+ * to) arrays and objects.
  * 
  */
 extern void ckit_memory_check(const void *ptr);

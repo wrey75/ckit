@@ -38,15 +38,15 @@ static inline ckit_array_definition * CHECK_MAGIC_NUMBER(void *ptr) {
     return data;
 }
 
-void *ckit_array_alloc(size_t element_size, size_t array_size) {
-    size_t size = array_size * element_size;
+void *ckit_array_alloc(size_t count, size_t element_size) {
+    size_t size = count * element_size;
     ckit_array_definition * ptr = (ckit_array_definition *)ckit_alloc(size + sizeof(ckit_array_definition));
     ptr->element_size = element_size;
-    ptr->array_size = array_size;
+    ptr->array_size = count;
     ptr->magic_number = MAGIC_NUMBER;
     ++ptr; // points to the user space
     memset(ptr, 0, size);
-    TRACE("ckit_array_alloc(): allocated %zu entries at %p\n", size, ptr);
+    TRACE("ckit_array_alloc(): allocated %zu bytes at %p\n", size, ptr);
     // ckit_memory_dump(stderr, &ptr[-1], sizeof(ckit_array_definition) + size);
     return ptr;
 }
@@ -76,4 +76,19 @@ void ckit_array_free(void *ptr) {
 size_t ckit_array_size(void *ptr) {
     ckit_array_definition *data = CHECK_MAGIC_NUMBER(ptr);
     return data->array_size;
+}
+
+
+void *ckit_magic_alloc(size_t size, const char *magic) {
+    const char **ptr = ckit_alloc(size + sizeof(char *));
+    ptr[0] = magic;
+    return (void *)&ptr[1];
+}
+
+void ckit_magic_free(void* ptr, const char *magic) {
+    const char **data = (const char **)ptr;
+    if(data[-1] != magic){
+        ckit_exit("This pointer is unexpected.");
+    }
+    ckit_free(&data[-1]);
 }
