@@ -106,25 +106,26 @@ memory has been ovverridden.
 
 We have 3 other allocations for arrays mainly.
 
-`void *ckit_array_alloc(size_t element_size, size_t array_size)` is to allocate an array of `array_size`
-elements each of them having a size of `element_size`. Note the allocated memory is set to zero. 
-You don't have to initialize it. The `array_size` can be zero to initialize an empty array.
+`void *ckit_array_alloc(size_t count, size_t size)` is to allocate an array of `count`
+elements each of them having a size of `size` bytes. Note the allocated memory is set to zero. 
+You don't have to initialize it. The `count` can be zero to initialize an empty array. Arguments are
+in the same order than `calloc`.
 
-`void *ckit_array_realloc(void * array_ptr, size_t newsize)` is to reallocate an array previously
+`void *ckit_array_realloc(void *array, size_t newsize)` is to reallocate an array previously
 allocated by `ckit_array_alloc`. You CAN NOT use this method to first allocate an array: you must first
 initialize the array. You can extend or shrink the array depending of your needs.
 
-`void ckit_array_free(void * array_ptr)` frees the array. Note the functions does not returns a NULL
+`void ckit_array_free(void * array)` frees the array. Note the functions does not returns a NULL
 pointer (`ckit_free()` does it). Only pointers allocated by the `ckit_array_alloc()` functions are
 permitted.
 
-`size_t ckit_array_size()` returns the size of the array. Thanks to a thin layer managed by the ckit
+`size_t ckit_array_size()` returns the count of the array (the number of elements). Thanks to a thin layer managed by the ckit
 library.
 
 NOTE: these arrays are not _fast_ in terms of performances but very useful to manipulate arrays as
 pointers. We have also an `Array` object provided by the library with more capabilities and the
-capacity to manage its memory more effeciently. But these functions are quite faster when used
-correctly. They are used inside the library itself.
+capacity to manage its memory more effeciently. But these functions are quite fast when used
+correctly. They are used inside the library itself and provided to the user for low-level coding.
 
 
 
